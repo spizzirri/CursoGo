@@ -19,7 +19,7 @@ func main() {
 	tweetManager.InitializeService()
 
 	shell.AddCmd(&ishell.Cmd{
-		Name: "publishTweet",
+		Name: "publishTextTweet",
 		Help: "Publishes a tweet",
 		Func: func(c *ishell.Context) {
 
@@ -36,7 +36,36 @@ func main() {
 			var tweet domain.Tweet
 			var tweetGenerator *domain.TextTweet
 
-			tweet = tweetGenerator.NewTweet(user, text, "")
+			tweet = tweetGenerator.NewTweet(user, text, "", nil)
+
+			_,_ = tweetManager.PublishTweet(tweet)
+
+			c.Print("Tweet sent\n")
+
+			return
+		},
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "publishImageTweet",
+		Help: "Publishes a image tweet",
+		Func: func(c *ishell.Context) {
+
+			defer c.ShowPrompt(true)
+
+			c.Print("Write your username: ")
+			user := c.ReadLine()
+
+			c.Print("Write your tweet: ")
+			text := c.ReadLine()
+
+			c.Print("Write your image: ")
+			urlImage := c.ReadLine()
+
+			var tweet domain.Tweet
+			var tweetGenerator *domain.ImageTweet
+
+			tweet = tweetGenerator.NewTweet(user, text, urlImage, nil)
 
 			_,_ = tweetManager.PublishTweet(tweet)
 
@@ -57,12 +86,7 @@ func main() {
 			var idTweet int
 			idTweet, _= strconv.Atoi(c.ReadLine())
 			tweet := tweetManager.GetTweetById(idTweet)
-
-			c.Println("Tweet id: ", tweet.GetId())
-			c.Println("Tweet text: ", tweet.GetText())
-			c.Println("User account: ", tweet.GetUser())
-			c.Println("Tweeted at: ", tweet.GetDate())
-
+			c.Println(tweet.String())
 			return
 		},
 	})
@@ -101,13 +125,9 @@ func main() {
 			}
 
 			for nroTweet, tweet := range tweets {
-				c.Println(tweet.String())
 				c.Println("Nro Tweet ", nroTweet)
 				c.Println("=====================")
-				c.Println("Tweet id: ", tweet.GetId())
-				c.Println("Tweet text: ", tweet.GetText())
-				c.Println("User account: ", tweet.GetUser())
-				c.Println("Tweeted at: ", tweet.GetDate())
+				c.Println(tweet.String())
 				c.Println()
 			}
 			return

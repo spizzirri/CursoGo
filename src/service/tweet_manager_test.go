@@ -4,10 +4,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/twitteer-go/src/domain"
 	"github.com/twitteer-go/src/service"
+	"strings"
 	"testing"
 )
 
-func TestPublishedTweetIsSaved(t *testing.T) {
+func TestPublishedTextTweetIsSaved(t *testing.T) {
 	var tweetManager service.TweetManager
 	tweetManager.InitializeService()
 	assert := assert.New(t)
@@ -16,7 +17,7 @@ func TestPublishedTweetIsSaved(t *testing.T) {
 
 	user := "Meli"
 	text := "Este es un tweet"
-	tweet = tweetGenerator.NewTweet(user, text, "")
+	tweet = tweetGenerator.NewTweet(user, text, "", nil)
 	var idTweet int
 	idTweet, _ = tweetManager.PublishTweet(tweet)
 
@@ -41,7 +42,7 @@ func TestTweetWithoutUserIsNotPublished(t *testing.T) {
 	var user string
 	text := "Este es un tweet"
 
-	tweet = tweetGenerator.NewTweet(user, text, "")
+	tweet = tweetGenerator.NewTweet(user, text, "", nil)
 
 	var err error
 	_, err = tweetManager.PublishTweet(tweet)
@@ -60,7 +61,7 @@ func TestTweetWithoutTextIsNotPublished(t *testing.T) {
 	user := "Meli"
 	var text string
 
-	tweet = tweetGenerator.NewTweet(user, text, "")
+	tweet = tweetGenerator.NewTweet(user, text, "", nil)
 
 	var err error
 	_, err = tweetManager.PublishTweet(tweet)
@@ -79,7 +80,7 @@ func TestTweetWith140CharacterIsNotPublished(t *testing.T) {
 	user := "Meli"
 	text := "BV8D8UBv8wgnNBio4fmBBAQBPyAzf0um3tWNUkYcUmnrYGIlJyoHxms3se5nbm1tTfEof0inyPaEJVUrr5EbNHlYXurKYZi0M2fxNofI1OirYVJyJKk7pzwF68rXGxrgziwxvG67jZgz1"
 
-	tweet = tweetGenerator.NewTweet(user, text, "")
+	tweet = tweetGenerator.NewTweet(user, text, "", nil)
 
 	var err error
 	_, err = tweetManager.PublishTweet(tweet)
@@ -97,8 +98,8 @@ func TestCanPublisheAndRetrieveMoreThanOneTweet(t *testing.T) {
 	var firstTweet, secondTweet domain.Tweet
 	var tweetGenerator *domain.TextTweet
 
-	firstTweet = tweetGenerator.NewTweet("Damian", "Hola Mundo", "")
-	secondTweet = tweetGenerator.NewTweet("Damian", "Hola Mundo2", "")
+	firstTweet = tweetGenerator.NewTweet("Damian", "Hola Mundo", "", nil)
+	secondTweet = tweetGenerator.NewTweet("Damian", "Hola Mundo2", "", nil)
 
 	var id1, id2 int
 
@@ -124,9 +125,9 @@ func TestCanRetrieveTheTextTweetsSentByAnUser(t *testing.T) {
 	anotherUser := "nick"
 	text := "This is my first tweet"
 	secondText := "This is my second tweet"
-	tweet = tweetGenerator.NewTweet(user, text, "")
-	secondTweet = tweetGenerator.NewTweet(user, secondText, "")
-	thirdTweet = tweetGenerator.NewTweet(anotherUser, text, "")
+	tweet = tweetGenerator.NewTweet(user, text, "", nil)
+	secondTweet = tweetGenerator.NewTweet(user, secondText, "", nil)
+	thirdTweet = tweetGenerator.NewTweet(anotherUser, text, "", nil)
 	// publish the 3 tweets
 
 	_,_  = tweetManager.PublishTweet(tweet)
@@ -148,3 +149,25 @@ func TestCanRetrieveTheTextTweetsSentByAnUser(t *testing.T) {
 	assert.Equal(firstPublishedTweet.GetUser(), secondPublishedTweet.GetUser())
 }
 
+func TestCanSearchForTweetContainingText(t *testing.T){
+
+	var tweetManager service.TweetManager
+	var tweetGenerator *domain.TextTweet
+	tweetManager.InitializeService()
+	tweet1 := tweetGenerator.NewTweet("damian", "hola Buenos Aires", "", nil)
+	_,_ = tweetManager.PublishTweet(tweet1)
+	tweet2 := tweetGenerator.NewTweet("damian", "hola La Pampa", "", nil)
+	_,_ = tweetManager.PublishTweet(tweet2)
+	tweet3 := tweetGenerator.NewTweet("damian", "hola Entre Rios", "", nil)
+	_,_ = tweetManager.PublishTweet(tweet3)
+
+	searchResult := make(chan domain.Tweet)
+	query := "Pampa"
+	go tweetManager.SearchTweetsContaining(query, searchResult)
+
+	foundTweet := <- searchResult
+
+	if foundTweet == nil { t.Errorf( "No se encontro el tweet") }
+	if !strings.Contains(foundTweet.GetText(), query) { t.Errorf( "No se encontro el tweet") }
+
+}
