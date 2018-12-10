@@ -113,6 +113,24 @@ func TestCanPublisheAndRetrieveMoreThanOneTweet(t *testing.T) {
 
 }
 
+func BenchmarkCanPublishAndRetriveMoreThanOneTweet(b *testing.B){
+
+	var tweetManager service.TweetManager
+	tweetManager.InitializeService()
+
+	var firstTweet, secondTweet domain.Tweet
+	var tweetGenerator *domain.TextTweet
+
+	for n:=0; n < b.N; n++{
+
+		firstTweet = tweetGenerator.NewTweet("Damian", "Hola Mundo",  "", nil)
+		secondTweet = tweetGenerator.NewTweet("Damian", "Hola Mundo2", "", nil)
+
+		_ , _ = tweetManager.PublishTweet(firstTweet)
+		_ , _ = tweetManager.PublishTweet(secondTweet)
+	}
+}
+
 func TestCanRetrieveTheTextTweetsSentByAnUser(t *testing.T) {
 	var tweetManager service.TweetManager
 	tweetManager.InitializeService()
@@ -169,5 +187,4 @@ func TestCanSearchForTweetContainingText(t *testing.T){
 
 	if foundTweet == nil { t.Errorf( "No se encontro el tweet") }
 	if !strings.Contains(foundTweet.GetText(), query) { t.Errorf( "No se encontro el tweet") }
-
 }

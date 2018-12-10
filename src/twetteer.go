@@ -3,20 +3,89 @@ package main
 import (
 	"fmt"
 	"github.com/abiosoft/ishell"
+	"github.com/gin-gonic/gin"
 	"github.com/twitteer-go/src/domain"
 	"github.com/twitteer-go/src/service"
+	"net/http"
 	"strconv"
 )
 
+func funcionQueHaceGet(c *gin.Context){
+
+	parameter := c.Param("parametro")
+	c.String(http.StatusOK, "ok")
+	fmt.Println("Parametro GET " + parameter)
+}
+
+func funcionQueHacePost(c *gin.Context){
+	var user domain.Usuario
+	if err := c.ShouldBindJSON(&user); err != nil{
+		c.JSON(http.StatusBadRequest, gin.H{ "error": err.Error() })
+	}else{
+		c.String(http.StatusOK,"ok")
+		fmt.Println("Parametros POST " + user.Correo)
+		fmt.Println("Parametros POST " + user.Pass)
+	}
+	return
+}
+
+func tweetsByUser(c *gin.Context){
+	var tweets []domain.Tweet
+
+	tm := c.MustGet("tm").(*service.TweetManager)
+
+	tweets = tm.GetTweetsByUser(c.Param("user"))
+
+	c.JSON(http.StatusOK, tweets)
+	return
+}
+
+func newTweet(c *gin.Context){
+	var textTweet domain.UsuarioTextTweet
+	var tm *service.TweetManager
+	tm = c.MustGet("tm").(*service.TweetManager)
+
+	if err := c.ShouldBindJSON(&textTweet); err != nil{
+		c.JSON(http.StatusBadRequest, gin.H{ "error": err.Error() })
+	}else{
+		var tweetGenerator *domain.TextTweet
+		fmt.Println( "JSON: " +  textTweet.Usuario + ", " +  textTweet.Texto)
+		tweet := tweetGenerator.NewTweet(textTweet.Usuario, textTweet.Texto, "", nil)
+		id,_ := tm.PublishTweet(tweet)
+		c.String(http.StatusOK,"Tweet numero %d", id)
+	}
+}
+
+func myMiddleware(tm *service.TweetManager) gin.HandlerFunc {
+	return func(c *gin.Context){
+		c.Set("tm", tm)
+		c.Next()
+	}
+}
+
+func initServer(tm *service.TweetManager){
+
+	router := gin.Default()
+	router.Use(myMiddleware(tm))
+
+	router.GET("/unGet/:parametro", funcionQueHaceGet)
+	router.POST("/unPost", funcionQueHacePost)
+	router.GET("/tweets/:user", tweetsByUser)
+	router.POST("/tweet", newTweet)
+
+	router.Run()
+}
+
 func main() {
+
+	var tweetManager service.TweetManager
+	tweetManager.InitializeService()
+
+	go initServer(&tweetManager)
 
 	shell := ishell.New()
 	shell.SetPrompt("Tweeter >> ")
 	shell.Print("Type 'help' to know commands\n")
-
-	var tweetManager service.TweetManager
-
-	tweetManager.InitializeService()
 
 	shell.AddCmd(&ishell.Cmd{
 		Name: "publishTextTweet",

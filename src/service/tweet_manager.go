@@ -75,6 +75,5 @@ func (tm *TweetManager) SearchTweetsContaining( query string, channel chan domai
 			channel <- tweet
 			return
 		}
-		return
 	}
 }
